@@ -1,11 +1,20 @@
+# -*- coding: UTF-8 -*-
+
 import ics
 import xlrd
 import datetime
 
 
-def create_event(date, diensttype):
-    e = ics.icalendar.Event(name=diensttype, begin=date, duration=datetime.timedelta(hours=26),
-                            created=datetime.datetime.now())
+def create_event(date, title, headers, dienstday):
+    unwanted_headers = ['Date']
+    for uh in unwanted_headers:
+        dienstday.pop(uh)
+    local_headers = [h for h in headers if h not in unwanted_headers]
+    description = ''
+    for h in local_headers:
+        description += '{:s}\t{}\n'.format(h+': ', dienstday[h])
+    e = ics.icalendar.Event(name=title, begin=date, duration=datetime.timedelta(hours=26),
+                            created=datetime.datetime.now(), description=description)
     return e
 
 def get_datetime(year, date):
@@ -18,40 +27,41 @@ def main(filename, doctorname):
     sheet = wb.sheets()[0]
 
     # The header of the Dienst table (which contains the names) is in the 4th row
-    # The first two columns are weekday and date
+    # The first two columns are weekday and date, we want to keep the date.
+    # The rest of the columns are the different Dienstgruppen (header) and the
+    # doctors doing the Dienst (table body)
+    # last row may contain a vorläufig marker
     rowoffset = 4
-    columnoffset = 2
+    columnoffset = 1
 
-    # First get the dates (which are in format DD.MM) and the year
-    dates_in_month = sheet.col_values(1)[rowoffset:]
+    # First get the year and whether it is december
     year = sheet.cell_value(1, 3)
     # December is a special case, it also includes part of january...
     endofyear = False
-    # if we have december, the "Monat" field will be Dezember/Januar
+    # if we have december, the "Jahr" field will be 20XX/20${XX+1}$
     # which is not a valid date entry and hence the field value will
     # be of type str
     if type(year) in [str]:
         year = int(year.split('/')[0])
         endofyear = True
 
-    # Then deal with the different dienst types
-    dienst_types = sheet.row_values(3)[columnoffset:]
-    dienste = {}
-    for i, dienstname in enumerate(dienst_types):
-        dienste[dienstname] = sheet.col_values(columnoffset+i)[rowoffset:]
+    # get the header entries, the date column does not have a usable header
+    headers = [c.value for c in sheet.row(rowoffset-1)[columnoffset:]]
+    headers[0] = 'Date'
 
     cal = ics.icalendar.Calendar()
-    for dienstname, dienstlist in dienste.items():
-        for date_in_month, name in zip(dates_in_month, dienstlist):
-            if name==doctorname:
-                # if we are in Dezember/Januar we need to distinguish
-                # between december (normal) days and january (from next
-                # year) days.
-                if endofyear and '.01.' in date_in_month:
-                    date = get_datetime(year+1, date_in_month)
-                else:
-                    date = get_datetime(year, date_in_month)
-                cal.events.add(create_event(date, diensttype=dienstname))
+    for rowid in range(sheet.nrows)[rowoffset:]:
+        dienstday = {key: cell.value for key, cell in zip(headers, sheet.row(rowid)[columnoffset:])}
+        # clean unwanted rows
+        datestr = dienstday['Date']
+        # check for complete name
+        if doctorname in dienstday.values():
+            diensttype = list(dienstday.keys())[list(dienstday.values()).index(doctorname)]
+            if endofyear:
+                date = get_datetime(year+1, datestr)
+            else:
+                date = get_datetime(year, datestr)
+            cal.events.add(create_event(date, title=diensttype, headers=headers, dienstday=dienstday))
 
     filename = 'dienste_{}.ics'.format(doctorname)
     with open('downloads/' + filename, 'w') as f:
