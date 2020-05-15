@@ -3,7 +3,7 @@ from app import app
 
 import os
 from flask import Flask, flash, request, redirect, url_for, send_from_directory, send_file
-# from werkzeug.utils import secure_filename
+from werkzeug.utils import secure_filename
 
 from app import generate_calendar
 
@@ -33,10 +33,8 @@ def about():
     return render_template('about.html', title='About myself')
 
 
-@app.route('/doroschedule', methods=['GET', 'POST'])
-def doroschedule():
-    # TODO: sanitize input and clean up xls and ics
-    # TODO: Add logging?
+@app.route('/orthoschedule', methods=['GET', 'POST'])
+def orthoschedule():
     if request.method == 'POST':
         if 'file' not in request.files:
             flash('No selected file')
@@ -45,26 +43,29 @@ def doroschedule():
         if file.filename == '':
             flash('No selected file')
             return redirect(request.url)
-        if file:
-            savedfilename =os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-            file.save(savedfilename)
-            try:
-                icsname = generate_calendar.main(inputfilename=savedfilename,
-                                                 outputpath=app.config['DOWNLOAD_FOLDER'],
-                                                 doctorname=request.form['doctorname'])
-            except:
-                os.remove(savedfilename)
+        else:
+            filename = secure_filename(file.filename)
+            if filename[-4:] == '.xls':
+                savedfilename = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(savedfilename)
+                try:
+                    icsname = generate_calendar.main(inputfilename=savedfilename,
+                                                     outputpath=app.config['DOWNLOAD_FOLDER'],
+                                                     doctorname=request.form['doctorname'])
+                    os.remove(savedfilename)
+                except:
+                    os.remove(savedfilename)
+                    flash('Please provide a valid .xls file')
+                    return redirect(request.url)
+            else:
                 flash('Please provide a valid .xls file')
                 return redirect(request.url)
-            else:
-                os.remove(savedfilename)
 
-            flash('You already converted a file, please reload')
             return redirect(url_for('download_ics', icsname=icsname))
 
     return render_template('upload_ortho_schedule.html')
 
 
-@app.route('/'+app.config['DOWNLOAD_FOLDER']+'/<icsname>')
+@app.route('/downloads/<icsname>')
 def download_ics(icsname):
     return send_file(app.config['DOWNLOAD_FOLDER']+'/{}'.format(icsname))
