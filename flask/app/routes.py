@@ -13,13 +13,27 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 @app.route('/')
 @app.route('/index')
 def index():
-    user = {'username': 'Miguel'}
+    return render_template('index.html', title='Home')
+
+
+@app.route('/quotes')
+def quotes():
     quotes = [
-            {'author': 'Andreas',
-             'body': 'Dies war keine gute Idee',
-             'time': '2020-04-14'},
+                {'author': 'Andreas',
+                 'body': 'Dies war keine gute Idee',
+                 'date': '2020-04-14'},
             ]
-    return render_template('index.html', title='Home', quotes=quotes)
+    return render_template('quotes.html', title='Quotes (at least allegedly):', quotes=quotes)
+
+
+@app.route('/me')
+def me():
+    return render_template('me.html', title='About myself')
+
+
+@app.route('/about')
+def about():
+    return render_template('about.html', title='About myself')
 
 
 @app.route('/doroschedule', methods=['GET', 'POST'])
@@ -34,15 +48,26 @@ def doroschedule():
         if file.filename == '':
             flash('No selected file')
             return redirect(request.url)
+        # if not file.filename.endswith('.xls'):
+        #     flash('Please provide the correct .xls file')
+        #     return redirect(request.url)
         if file:
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], file.filename))
-            icsname = generate_calendar.main(filename='uploads/{}'.format(file.filename),
-                                             doctorname=request.form['doctorname'])
+            try:
+                icsname = generate_calendar.main(filename='uploads/{}'.format(file.filename),
+                                                 doctorname=request.form['doctorname'])
+            except:
+                os.remove('uploads/{}'.format(file.filename))
+                flash('Please provide a valid .xls file')
+                return redirect(request.url)
+            else:
+                os.remove('uploads/{}'.format(file.filename))
+
             return redirect(url_for('download_ics', icsname=icsname))
 
-    return render_template('upload.html')
+    return render_template('upload_ortho_schedule.html')
 
 
-@app.route('/download/<icsname>')
+@app.route('/'+app.config['DOWNLOAD_FOLDER']+'/<icsname>')
 def download_ics(icsname):
-    return send_file('../downloads/{}'.format(icsname))
+    return send_file(app.config['DOWNLOAD_FOLDER']+'/{}'.format(icsname))

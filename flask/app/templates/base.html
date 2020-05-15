@@ -1,14 +1,25 @@
+<!DOCTYPE html>
+
 <html>
+    <meta charset="UTF-8">
+    <meta name="keywords" content="HTML, CSS">
+    <meta name="author" content="Andreas Baumbach">
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
     <head>
         {% if title %}
             <title>{{ title }}</title>
         {% else %}
-            <title>Homepage of a lazy person</title>
+            <title>Andreas Baumbach</title>
         {% endif %}
     </head>
     <body>
         <div>
-            Homepage: <a href='/index'>Home</a>
+            <a href='/index'>Home</a>
+            <a href='/me'>Me</a>
+            <a href='/quotes'>Quotes</a>
+            <a href='/about'>About</a>
         </div>
         {% block content %}
         {% endblock %}

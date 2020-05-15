@@ -1,0 +1,34 @@
+<!doctype html>
+	<title>Kalendereinträge</title>
+
+	<h1>Zu Kalendereinträgen konvertieren</h1>
+
+	<p>
+		Diese Seite übersetzt den internen Dienstplan im .xls Format in .ics Termine zum Import in normale Kalenderapps. Hierzu wird das .xls-File auf den Server hochgeladen, dort zu dem jeweiligen Namen (buchstabengetreu) die Dienste extrahiert und das .ics-File erstellt. Mit dem Erstellen der .ics-Datei zum Download wird das hochgeladene .xls-File wieder gelöscht. Aus technischen Gründen verbleiben die .ics-Files bis zu 24h auf dem Server.
+	</p>
+
+	<h3>Select a file to upload</h3>
+	<p>
+		{% with messages = get_flashed_messages() %}
+		  {% if messages %}
+			<ul class=flashes>
+			{% for message in messages %}
+			  <li>{{ message }}</li>
+			{% endfor %}
+			</ul>
+		  {% endif %}
+		{% endwith %}
+	</p>
+	<form method="post" enctype="multipart/form-data">
+	    <dl>
+			<p>
+				Name des Doktors: <input type="text" name="doctorname" autocomplete="on" required>
+			</p>
+			<p>
+				<input type="file" name="file" autocomplete="off" required>
+			</p>
+	    </dl>
+	    <p>
+			<input type="submit" value="Submit">
+		</p>
+	</form>
