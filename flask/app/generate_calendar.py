@@ -2,6 +2,7 @@
 
 import ics
 import xlrd
+import os
 import datetime
 
 
@@ -22,8 +23,8 @@ def get_datetime(year, date):
     d = datetime.datetime(year=int(year), month=int(month), day=int(day), hour=7)
     return d
 
-def main(filename, doctorname):
-    wb = xlrd.open_workbook(filename)
+def main(inputfilename, outputpath, doctorname):
+    wb = xlrd.open_workbook(inputfilename)
     sheet = wb.sheets()[0]
 
     # The header of the Dienst table (which contains the names) is in the 4th row
@@ -64,7 +65,7 @@ def main(filename, doctorname):
             cal.events.add(create_event(date, title=diensttype, headers=headers, dienstday=dienstday))
 
     filename = 'dienste_{}.ics'.format(doctorname)
-    with open('downloads/' + filename, 'w') as f:
+    with open(os.path.join(outputpath, filename), 'w') as f:
         f.writelines(cal)
     return filename
 

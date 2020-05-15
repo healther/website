@@ -7,9 +7,6 @@ from flask import Flask, flash, request, redirect, url_for, send_from_directory,
 
 from app import generate_calendar
 
-UPLOAD_FOLDER = '/path/to/the/uploads'
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
-
 @app.route('/')
 @app.route('/index')
 def index():
@@ -42,27 +39,27 @@ def doroschedule():
     # TODO: Add logging?
     if request.method == 'POST':
         if 'file' not in request.files:
-            flash('No file part')
+            flash('No selected file')
             return redirect(request.url)
         file = request.files['file']
         if file.filename == '':
             flash('No selected file')
             return redirect(request.url)
-        # if not file.filename.endswith('.xls'):
-        #     flash('Please provide the correct .xls file')
-        #     return redirect(request.url)
         if file:
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], file.filename))
+            savedfilename =os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+            file.save(savedfilename)
             try:
-                icsname = generate_calendar.main(filename='uploads/{}'.format(file.filename),
+                icsname = generate_calendar.main(inputfilename=savedfilename,
+                                                 outputpath=app.config['DOWNLOAD_FOLDER'],
                                                  doctorname=request.form['doctorname'])
             except:
-                os.remove('uploads/{}'.format(file.filename))
+                os.remove(savedfilename)
                 flash('Please provide a valid .xls file')
                 return redirect(request.url)
             else:
-                os.remove('uploads/{}'.format(file.filename))
+                os.remove(savedfilename)
 
+            flash('You already converted a file, please reload')
             return redirect(url_for('download_ics', icsname=icsname))
 
     return render_template('upload_ortho_schedule.html')
