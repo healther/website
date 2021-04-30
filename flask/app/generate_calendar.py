@@ -5,6 +5,9 @@ import xlrd
 import os
 import datetime
 
+# patch py3.8 incompatibility
+xlrd.book.time.clock = xlrd.book.time.process_time
+
 
 def create_event(date, title, headers, dienstday):
     unwanted_headers = ['Date']
@@ -19,11 +22,13 @@ def create_event(date, title, headers, dienstday):
     return e
 
 def get_datetime(year, date):
+    print(date)
+    print(xlrd.xldate_as_tuple(date, book.datemode))
     day, month, _ = date.split('.')
     d = datetime.datetime(year=int(year), month=int(month), day=int(day), hour=7)
     return d
 
-def main(inputfilename, outputpath, doctorname):
+def extract_from_xlrd(inputfilename, doctorname):
     wb = xlrd.open_workbook(inputfilename)
     sheet = wb.sheets()[0]
 
@@ -58,11 +63,25 @@ def main(inputfilename, outputpath, doctorname):
         # check for complete name
         if doctorname in dienstday.values():
             diensttype = list(dienstday.keys())[list(dienstday.values()).index(doctorname)]
-            if endofyear:
-                date = get_datetime(year+1, datestr)
+            if type(datestr) is float:
+                date = xlrd.xldate_as_tuple(datestr, wb.datemode)
             else:
-                date = get_datetime(year, datestr)
+                if endofyear:
+                    date = get_datetime(year+1, datestr)
+                else:
+                    date = get_datetime(year, datestr)
             cal.events.add(create_event(date, title=diensttype, headers=headers, dienstday=dienstday))
+
+    return cal
+
+def main(inputfilename, outputpath, doctorname):
+    if inputfilename.endswith('.xlrd') or inputfilename.endswith('.xls'):
+        cal = extract_from_xlrd(inputfilename, doctorname)
+    elif inputfilename.endswith('.pdf'):
+        data = extract_from_pdf(inputfilename, doctorname)
+        cal = transform_into_calendar(data, doctorname)
+    else:
+        raise ValueError('Wrong format, can only deal with .pdf and .xlrd')
 
     filename = 'dienste_{}.ics'.format(doctorname)
     with open(os.path.join(outputpath, filename), 'w') as f:
@@ -73,9 +92,11 @@ def main(inputfilename, outputpath, doctorname):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser("Parses the schedule of the clinic and dumps an ics version of all Dienste for a given doctor.")
-    parser.add_argument("filename", help="Schedule xls file")
+    parser.add_argument("inputfilename", help="Schedule xls file")
     parser.add_argument("doctorname", help="Name for which the event file should be created")
 
     args = parser.parse_args()
 
-    main(**vars(args))
+    argdict = vars(args)
+    argdict['outputpath'] = '.'
+    main(**argdict)
