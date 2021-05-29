@@ -1,5 +1,9 @@
-<!doctype html>
-	<title>Kalendereinträge</title>
+{% extends "base.html" %}
+
+{% block title %} Kalendereinträge {% endblock %}
+
+
+{% block content %}
 
 	<h1>Zu Kalendereinträgen konvertieren</h1>
 
@@ -19,16 +23,23 @@
 		  {% endif %}
 		{% endwith %}
 	</p>
+
 	<form method="post" enctype="multipart/form-data">
-	    <dl>
-			<p>
-				Name des Doktors: <input type="text" name="doctorname" autocomplete="on" required>
-			</p>
-			<p>
-				<input type="file" name="file" autocomplete="off" required>
-			</p>
-	    </dl>
-	    <p>
-			<input type="submit" value="Submit">
-		</p>
+		<div class="form-group">
+			<label for="Name">Name des Doktors:</label>
+			<input type="text" name="doctorname" id="doctorname" class="form-control" autocomplete="on" required/>
+		</div>
+
+		<div class="form-group file-area">
+			<input type="file" name="file" id="file" required="required"/>
+			<div class="file-dummy">
+				<div class="success">Datei selektiert!</div>
+				<div class="default">XLS Datei auswählen</div>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<button type="submit">Get ICS</button>
+		</div>
 	</form>
+{% endblock %}

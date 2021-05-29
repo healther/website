@@ -63,7 +63,7 @@ def orthoschedule():
 
             return redirect(url_for('download_ics', icsname=icsname))
 
-    return render_template('upload_ortho_schedule.html')
+    return render_template('orthoschedule/upload_ortho_schedule.html', title='Dienstplan Ortho')
 
 
 @app.route('/downloads/<icsname>')
