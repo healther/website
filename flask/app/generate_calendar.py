@@ -4,6 +4,11 @@ import ics
 import xlrd
 import os
 import datetime
+import time
+
+# ensure correct time zone
+os.environ['TZ'] = 'Europe/Berlin'
+time.tzset()
 
 # patch py3.8 incompatibility
 xlrd.book.time.clock = xlrd.book.time.process_time
@@ -22,8 +27,6 @@ def create_event(date, title, headers, dienstday):
     return e
 
 def get_datetime(year, date):
-    print(date)
-    print(xlrd.xldate_as_tuple(date, book.datemode))
     day, month, _ = date.split('.')
     d = datetime.datetime(year=int(year), month=int(month), day=int(day), hour=7)
     return d
