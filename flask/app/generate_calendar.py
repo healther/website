@@ -5,6 +5,7 @@ import xlrd
 import os
 import datetime
 import time
+import pytz
 
 # ensure correct time zone
 os.environ['TZ'] = 'Europe/Berlin'
@@ -22,13 +23,17 @@ def create_event(date, title, headers, dienstday):
     description = ''
     for h in local_headers:
         description += '{:s}\t{}\n'.format(h+': ', dienstday[h])
-    e = ics.icalendar.Event(name=title, begin=date, duration=datetime.timedelta(hours=26),
+    date = date.replace(hour=10)
+    localtz = pytz.timezone('Europe/Berlin')
+    date = localtz.localize(date)
+
+    e = ics.icalendar.Event(name=title, begin=date, duration=datetime.timedelta(hours=23),
                             created=datetime.datetime.now(), description=description)
     return e
 
 def get_datetime(year, date):
     day, month, _ = date.split('.')
-    d = datetime.datetime(year=int(year), month=int(month), day=int(day), hour=7)
+    d = datetime.datetime(year=int(year), month=int(month), day=int(day))
     return d
 
 def extract_from_xlrd(inputfilename, doctorname):
@@ -67,7 +72,8 @@ def extract_from_xlrd(inputfilename, doctorname):
         if doctorname in dienstday.values():
             diensttype = list(dienstday.keys())[list(dienstday.values()).index(doctorname)]
             if type(datestr) is float:
-                date = xlrd.xldate_as_tuple(datestr, wb.datemode)
+                datetuple = xlrd.xldate_as_tuple(datestr, wb.datemode)
+                date = datetime.datetime(*datetuple)
             else:
                 if endofyear:
                     date = get_datetime(year+1, datestr)
